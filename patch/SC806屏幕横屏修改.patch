@@ -1,0 +1,342 @@
+注意：在kernel目录下的屏参文件中添加		qcom,mdss-dsi-panel-orientation = "180";
+
+Not currently on any branch.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+        modified:   cmds/bootanimation/BootAnimation.cpp
+        modified:   core/java/com/android/internal/view/RotationPolicy.java
+        modified:   core/res/res/values/config.xml
+        modified:   packages/SettingsProvider/src/com/android/providers/settings/DatabaseHelper.java
+        modified:   services/core/java/com/android/server/policy/PhoneWindowManager.java
+        modified:   services/core/java/com/android/server/power/PowerManagerService.java
+        modified:   services/core/java/com/android/server/wm/WindowManagerService.java
+
+
+It took 4.45 seconds to enumerate untracked files. 'status -uno'
+may speed it up, but you have to be careful not to forget to add
+new files yourself (see 'git help status').
+no changes added to commit (use "git add" and/or "git commit -a")
+liuw@ubuntu022:~/sc806-7-modem/LINUX/android/frameworks/base$ git diff 
+diff --git a/cmds/bootanimation/BootAnimation.cpp b/cmds/bootanimation/BootAnimation.cpp
+index 194849f..e5b9906 100755
+--- a/cmds/bootanimation/BootAnimation.cpp
++++ b/cmds/bootanimation/BootAnimation.cpp
+@@ -300,6 +300,19 @@ status_t BootAnimation::readyToRun() {
+     status_t status = SurfaceComposerClient::getDisplayInfo(dtoken, &dinfo);
+     if (status)
+         return -1;
++    ALOGE("eliot BootAnimation::readyToRun111111\n");  
++
++       char value[PROPERTY_VALUE_MAX];
++       property_get("persist.panel.orientation", value,"0");
++       int orient= atoi(value) / 90;
++       if(orient== 1 || orient == 3) {
++               int temp = dinfo.h;
++               dinfo.h = dinfo.w;
++               dinfo.w = temp;
++       }
++       Rect destRect(dinfo.w, dinfo.h);
++       mSession->setDisplayProjection(dtoken, orient, destRect, destRect);
++       ALOGE("eliot BootAnimation::readyToRun22222222\n");
+ 
+     // create the native surface
+     sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),
+diff --git a/core/java/com/android/internal/view/RotationPolicy.java b/core/java/com/android/internal/view/RotationPolicy.java
+old mode 100644
+new mode 100755
+index b479cb1..cb12e3d
+--- a/core/java/com/android/internal/view/RotationPolicy.java
++++ b/core/java/com/android/internal/view/RotationPolicy.java
+@@ -32,7 +32,7 @@ import android.view.Display;
+ import android.view.IWindowManager;
+ import android.view.Surface;
+ import android.view.WindowManagerGlobal;
+-
++import android.os.SystemProperties;
+ import com.android.internal.R;
+ 
+ /**
+@@ -140,7 +140,9 @@ public final class RotationPolicy {
+                 try {
+                     IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
+                     if (enabled) {
+-                        wm.freezeRotation(rotation);
++                       // wm.freezeRotation(rotation);
++                                               wm.freezeRotation(SystemProperties.getInt("persist.panel.orientation", 0)/90);
++                                               
+                     } else {
+                         wm.thawRotation();
+                     }
+diff --git a/core/res/res/values/config.xml b/core/res/res/values/config.xml
+index de27584..4428b49 100755
+--- a/core/res/res/values/config.xml
++++ b/core/res/res/values/config.xml
+@@ -628,7 +628,7 @@
+          settings are omitted from the system UI.  In certain situations we may
+          still use the accelerometer to determine the orientation, such as when
+          docked if the dock is configured to enable the accelerometer. -->
+-    <bool name="config_supportAutoRotation">true</bool>
++    <bool name="config_supportAutoRotation">false</bool>
+ 
+     <!-- If true, the screen can be rotated via the accelerometer in all 4
+          rotations as the default behavior. -->
+@@ -682,8 +682,8 @@
+     <!-- Lid switch behavior -->
+ 
+     <!-- The number of degrees to rotate the display when the keyboard is open.
+-         A value of -1 means no change in orientation by default. -->
+-    <integer name="config_lidOpenRotation">-1</integer>
++         A value of -1 means no change in orientation by default. modify by andyi 20210622 90  270-->
++    <integer name="config_lidOpenRotation">270</integer>
+ 
+     <!-- Indicate whether the lid state impacts the accessibility of
+          the physical keyboard.  0 means it doesn't, 1 means it is accessible
+@@ -1046,7 +1046,7 @@
+ 
+     <!-- Minimum screen brightness setting allowed by the power manager.
+          The user is forbidden from setting the brightness below this level. -->
+-    <integer name="config_screenBrightnessSettingMinimum">60</integer>
++    <integer name="config_screenBrightnessSettingMinimum">10</integer>
+ 
+     <!-- Maximum screen brightness allowed by the power manager.
+          The user is forbidden from setting the brightness above this level. -->
+diff --git a/packages/SettingsProvider/src/com/android/providers/settings/DatabaseHelper.java b/packages/SettingsProvider/src/com/android/providers/settings/DatabaseHelper.java
+old mode 100644
+new mode 100755
+index 0015da6..8d34868
+--- a/packages/SettingsProvider/src/com/android/providers/settings/DatabaseHelper.java
++++ b/packages/SettingsProvider/src/com/android/providers/settings/DatabaseHelper.java
+@@ -2409,7 +2409,8 @@ class DatabaseHelper extends SQLiteOpenHelper {
+ 
+             loadIntegerSetting(stmt, Settings.System.POINTER_SPEED,
+                     R.integer.def_pointer_speed);
+-
++                       // modify by andyi 
++            loadIntegerSetting(stmt, Settings.System.USER_ROTATION, R.integer.def_user_rotation);
+             /*
+              * IMPORTANT: Do not add any more upgrade steps here as the global,
+              * secure, and system settings are no longer stored in a database
+diff --git a/services/core/java/com/android/server/policy/PhoneWindowManager.java b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+index ad35193..6fe5996 100755
+--- a/services/core/java/com/android/server/policy/PhoneWindowManager.java
++++ b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+@@ -161,6 +161,7 @@ import java.io.PrintWriter;
+ import java.util.HashSet;
+ import java.util.List;
+ 
++import android.os.SystemProperties;
+ /**
+  * WindowManagerPolicy implementation for the Android phone UI.  This
+  * introduces a new method suffix, Lp, for an internal lock of the
+@@ -1991,6 +1992,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             return;
+         }
+         mDisplay = display;
++               mPanelOrientation =SystemProperties.getInt("persist.panel.orientation", 0) / 90;
+ 
+         final Resources res = mContext.getResources();
+         int shortSize, longSize;
+@@ -4450,11 +4452,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+ 
+     private int navigationBarPosition(int displayWidth, int displayHeight, int displayRotation) {
+         if (mNavigationBarCanMove && displayWidth > displayHeight) {
++                       /*              
+             if (displayRotation == Surface.ROTATION_270) {
+                 return NAV_BAR_LEFT;
+             } else {
+                 return NAV_BAR_RIGHT;
+             }
++                       */
+         }
+         return NAV_BAR_BOTTOM;
+     }
+@@ -6878,6 +6882,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     void sendCloseSystemWindows(String reason) {
+         PhoneWindow.sendCloseSystemWindows(mContext, reason);
+     }
++       
++       int mPanelOrientation = Surface.ROTATION_0;
+ 
+     @Override
+     public int rotationForOrientationLw(int orientation, int lastRotation) {
+@@ -6964,7 +6970,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     mAllowAllRotations = mContext.getResources().getBoolean(
+                             com.android.internal.R.bool.config_allowAllRotations) ? 1 : 0;
+                 }
+-                if (sensorRotation != Surface.ROTATION_180
++                if (
++                                               //sensorRotation != Surface.ROTATION_180
++                                               sensorRotation != mUpsideDownRotation
+                         || mAllowAllRotations == 1
+                         || orientation == ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                         || orientation == ActivityInfo.SCREEN_ORIENTATION_FULL_USER) {
+@@ -7042,7 +7050,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     if (preferredRotation >= 0) {
+                         return preferredRotation;
+                     }
+-                    return Surface.ROTATION_0;
++/*                                     
++                                       // modify by andyi 
++                    //return Surface.ROTATION_0;
++*/
++                                        return mPanelOrientation;
+             }
+         }
+     }
+diff --git a/services/core/java/com/android/server/power/PowerManagerService.java b/services/core/java/com/android/server/power/PowerManagerService.java
+old mode 100644
+new mode 100755
+index 7528a74..f3bd1f5
+--- a/services/core/java/com/android/server/power/PowerManagerService.java
++++ b/services/core/java/com/android/server/power/PowerManagerService.java
+@@ -1830,6 +1830,7 @@ public final class PowerManagerService extends SystemService
+     }
+ 
+     private int getScreenOffTimeoutLocked(int sleepTimeout) {
++               int nosleep = 0; // add never srceen off
+         int timeout = mScreenOffTimeoutSetting;
+         if (isMaximumScreenOffTimeoutFromDeviceAdminEnforcedLocked()) {
+             timeout = Math.min(timeout, mMaximumScreenOffTimeoutFromDeviceAdmin);
+@@ -1840,6 +1841,13 @@ public final class PowerManagerService extends SystemService
+         if (sleepTimeout >= 0) {
+             timeout = Math.min(timeout, sleepTimeout);
+         }
++               //add never srceen off begin
++        nosleep = mScreenOffTimeoutSetting;  
++        if(nosleep  == 0){  
++            nosleep = mMaximumScreenOffTimeoutFromDeviceAdmin ;  
++            return Math.max(nosleep, mMaximumScreenOffTimeoutFromDeviceAdmin);  
++        }
++        //add never srceen off end
+         return Math.max(timeout, mMinimumScreenOffTimeoutConfig);
+     }
+ 
+diff --git a/services/core/java/com/android/server/wm/WindowManagerService.java b/services/core/java/com/android/server/wm/WindowManagerService.java
+index 2da2a98..2c6dcc5 100755
+--- a/services/core/java/com/android/server/wm/WindowManagerService.java
++++ b/services/core/java/com/android/server/wm/WindowManagerService.java
+@@ -553,7 +553,8 @@ public class WindowManagerService extends IWindowManager.Stub
+     /** All DisplayContents in the world, kept here */
+     SparseArray<DisplayContent> mDisplayContents = new SparseArray<>(2);
+ 
+-    int mRotation = 0;
++  //  int mRotation = 1;  // modifyby andyi 20210622
++       int mRotation = SystemProperties.getInt("persist.panel.orientation", 0) / 90;
+     int mLastOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+     boolean mAltOrientation = false;
+	 
+/sc806-7-modem/LINUX/android/frameworks/native$ git status .
+Not currently on any branch.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+        modified:   services/surfaceflinger/DisplayDevice.cpp
+        modified:   services/surfaceflinger/DisplayDevice.h
+        modified:   services/surfaceflinger/SurfaceFlinger.cpp
+
+no changes added to commit (use "git add" and/or "git commit -a")
+liuw@ubuntu022:~/sc806-7-modem/LINUX/android/frameworks/native$ git diff 
+diff --git a/services/surfaceflinger/DisplayDevice.cpp b/services/surfaceflinger/DisplayDevice.cpp
+old mode 100644
+new mode 100755
+index f1450cf..0942953
+--- a/services/surfaceflinger/DisplayDevice.cpp
++++ b/services/surfaceflinger/DisplayDevice.cpp
+@@ -167,10 +167,20 @@ DisplayDevice::DisplayDevice(
+     // 1: H-Flip, 2: V-Flip, 3: 180 (HV Flip)
+     property_get("ro.panel.mountflip", property, "0");
+     mPanelMountFlip = atoi(property);
+-
++#if 0
+     // initialize the display orientation transform.
+     setProjection(DisplayState::eOrientationDefault, mViewport, mFrame);
++#endif
++#if 1
++int panelOrientation = DisplayState::eOrientationDefault;
++    // Set the panel orientation from the property.
++    property_get("persist.panel.orientation", property, "0");
++    panelOrientation = atoi(property) / 90;
++// initialize the display orientation transform.
++       setProjection(panelOrientation, mViewport, mFrame);
+ 
++
++#endif
+ #ifdef NUM_FRAMEBUFFER_SURFACE_BUFFERS
+     surface->allocateBuffers();
+ #endif
+diff --git a/services/surfaceflinger/DisplayDevice.h b/services/surfaceflinger/DisplayDevice.h
+old mode 100644
+new mode 100755
+diff --git a/services/surfaceflinger/SurfaceFlinger.cpp b/services/surfaceflinger/SurfaceFlinger.cpp
+old mode 100644
+new mode 100755
+index 2cd699b..2acdfa8
+--- a/services/surfaceflinger/SurfaceFlinger.cpp
++++ b/services/surfaceflinger/SurfaceFlinger.cpp
+@@ -2571,7 +2571,15 @@ void SurfaceFlinger::onInitializeDisplays() {
+              DisplayState::eLayerStackChanged;
+     d.token = mBuiltinDisplays[DisplayDevice::DISPLAY_PRIMARY];
+     d.layerStack = 0;
+-    d.orientation = DisplayState::eOrientationDefault;
++    char value[PROPERTY_VALUE_MAX];
++    property_get("persist.panel.orientation", value,"0");
++    int orient= atoi(value) / 90;
++    if(orient== 1 || orient == 3) {
++        d.orientation = DisplayState::eOrientation90;
++    } else {
++        d.orientation = DisplayState::eOrientationDefault;
++    }
++
+     d.frame.makeInvalid();
+     d.viewport.makeInvalid();
+     d.width = 0;
+	 
+Not currently on any branch.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+        modified:   system.prop
+
+no changes added to commit (use "git add" and/or "git commit -a")
+liuw@ubuntu022:~/sc806-7-modem/LINUX/android/device/qcom/msm8909$ git diff 
+diff --git a/system.prop b/system.prop
+index 13553fe..62e0c86 100755
+--- a/system.prop
++++ b/system.prop
+@@ -1,6 +1,11 @@
+ #
+ # system.prop for msm8909
+ #
++persist.panel.orientation=270
++persist.demo.hdmirotates=true
++persist.demo.hdmirotation=270
++#
++qemu.hw.mainkeys=0 
+ 
+ #rild.libpath=/system/lib/libreference-ril.so
+ rild.libpath=/system/vendor/lib/libril-qc-qmi-1.so
+liuw@ubuntu022:~/sc806-7-modem/LINUX/android/device/qcom/msm8909$ 
+liuw@ubuntu022:~/sc806-7-modem/LINUX/android/device/qcom/msm8909$ 
+
+diff --git a/src/com/android/settings/accessibility/AccessibilitySettings.java b/src/com/android/settings/accessibility/AccessibilitySettings.java
+old mode 100644
+new mode 100755
+index 62671fa..10feba9
+--- a/src/com/android/settings/accessibility/AccessibilitySettings.java
++++ b/src/com/android/settings/accessibility/AccessibilitySettings.java
+@@ -650,8 +650,9 @@ public class AccessibilitySettings extends SettingsPreferenceFragment implements
+     private void updateLockScreenRotationCheckbox() {
+         Context context = getActivity();
+         if (context != null) {
+-            mToggleLockScreenRotationPreference.setChecked(
+-                    !RotationPolicy.isRotationLocked(context));
++         //   mToggleLockScreenRotationPreference.setChecked(
++           //         !RotationPolicy.isRotationLocked(context));
++                    mToggleLockScreenRotationPreference.setChecked(false);
+         }
+     }
+  

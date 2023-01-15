@@ -1,0 +1,81 @@
+(1)frameworks/base/core/res/res/values/config.xml
+--- a/frameworks/base/core/res/res/values/config.xml
++++ b/frameworks/base/core/res/res/values/config.xml
+@@ -628,7 +628,7 @@
+          settings are omitted from the system UI.  In certain situations we may
+          still use the accelerometer to determine the orientation, such as when
+          docked if the dock is configured to enable the accelerometer. -->
+-    <bool name="config_supportAutoRotation">true</bool>
++    <bool name="config_supportAutoRotation">false</bool>
+ 
+     <!-- If true, the screen can be rotated via the accelerometer in all 4
+          rotations as the default behavior. -->
+@@ -683,7 +683,7 @@
+ 
+     <!-- The number of degrees to rotate the display when the keyboard is open.
+          A value of -1 means no change in orientation by default. -->
+-    <integer name="config_lidOpenRotation">-1</integer>
++    <integer name="config_lidOpenRotation">90</integer>
+ 
+     <!-- Indicate whether the lid state impacts the accessibility of
+          the physical keyboard.  0 means it doesn't, 1 means it is accessible
+
+(2) frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
+--- a/frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
++++ b/frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
+@@ -553,7 +553,7 @@ public class WindowManagerService extends IWindowManager.Stub
+     /** All DisplayContents in the world, kept here */
+     SparseArray<DisplayContent> mDisplayContents = new SparseArray<>(2);
+ 
+-    int mRotation = 0;
++    int mRotation = Surface.ROTATION_90;
+     int mLastOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+     boolean mAltOrientation = false;
+ 
+@@ -3690,6 +3690,11 @@ public class WindowManagerService extends IWindowManager.Stub
+     }
+ 
+     private int getAppSpecifiedOrientation() {
++        /强制设置第三方App横屏显示
++        if(true){
++            return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
++        }
++        //强制设置第三方App横屏显示
+         int lastOrientation = SCREEN_ORIENTATION_UNSPECIFIED;
+         boolean findingBehind = false;
+         boolean lastFullscreen = false;
+@@ -6869,7 +6874,7 @@ public class WindowManagerService extends IWindowManager.Stub
+         final WindowList windows = displayContent.getWindowList();
+ 
+         final int oldRotation = mRotation;
+-        int rotation = mPolicy.rotationForOrientationLw(mLastOrientation, mRotation);
++        int rotation = Surface.wo;
+         boolean rotateSeamlessly = mPolicy.shouldRotateSeamlessly(oldRotation, rotation);
+ 
+         if (rotateSeamlessly) {
+
+(3) frameworks/native/services/surfaceflinger/DisplayDevice.cpp
+--- a/frameworks/native/services/surfaceflinger/DisplayDevice.cpp
++++ b/frameworks/native/services/surfaceflinger/DisplayDevice.cpp
+@@ -169,7 +169,7 @@ DisplayDevice::DisplayDevice(
+     mPanelMountFlip = atoi(property);
+ 
+     // initialize the display orientation transform.
+-    setProjection(DisplayState::eOrientationDefault, mViewport, mFrame);
++    setProjection(DisplayState::eOrientation90, mViewport, mFrame);
+ 
+ #ifdef NUM_FRAMEBUFFER_SURFACE_BUFFERS
+     surface->allocateBuffers();
+
+(4) frameworks/base/cmds/bootanimation/BootAnimation.cpp
+--- a/frameworks/base/cmds/bootanimation/BootAnimation.cpp    
++++ b/frameworks/base/cmds/bootanimation/BootAnimation.cpp   
+@@ -417,11 +417,11 @@
+if (status)
+return -1;
+：；;;`
+// create the native surface
+sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),
+-            dinfo.w, dinfo.h, PIXEL_FORMAT_RGB_565);
++            dinfo.h, dinfo.w, PIXEL_FORMAT_RGB_565);
+

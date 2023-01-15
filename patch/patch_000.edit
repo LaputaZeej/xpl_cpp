@@ -1,0 +1,14 @@
+注意：在kernel目录下的屏参文件中添加		qcom,mdss-dsi-panel-orientation = "180";
+
+# 查看屏参文件
+adb shell
+su
+cat proc/cmdline
+
+# 找到文件
+cd kernel/arch/arm/boot/dts
+find . -name "dsi-panel-otm1287a-yushun-720p-video.dtsi"
+
+
+
+

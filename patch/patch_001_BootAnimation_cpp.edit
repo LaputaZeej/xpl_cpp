@@ -1,0 +1,28 @@
+
+   status_t status = SurfaceComposerClient::getDisplayInfo(dtoken, &dinfo);
+     if (status)
+         return -1;
+
+
+
+
+// 修改部分
+    ALOGE("eliot BootAnimation::readyToRun111111\n");
+
+       char value[PROPERTY_VALUE_MAX];
+       property_get("persist.panel.orientation", value,"0");
+       int orient= atoi(value) / 90;
+       if(orient== 1 || orient == 3) {
+               int temp = dinfo.h;
+               dinfo.h = dinfo.w;
+               dinfo.w = temp;
+       }
+       Rect destRect(dinfo.w, dinfo.h);
+       mSession->setDisplayProjection(dtoken, orient, destRect, destRect);
+       ALOGE("eliot BootAnimation::readyToRun22222222\n");
+// 修改部分
+
+
+
+     // create the native surface
+     sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),

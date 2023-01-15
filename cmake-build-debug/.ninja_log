@@ -1,8 +1,12 @@
 # ninja log v5
-0	274	1666683304256183702	CMakeFiles/_xpl_cpp.dir/main.cpp.o	5fa3ecc6b83f7b57
-274	307	1666683304290233079	_xpl_cpp	3ffd2729c2fbcd08
-1	300	1671097940974923531	CMakeFiles/_xpl_cpp.dir/cpp_primer/s12_15.cpp.o	431d7e251951b77
-0	18	1671097957851320503	CMakeFiles/_xpl_cpp.dir/music/QiFengLe.cpp.o	13612999f1c5d060
-18	54	1671097957887522354	_xpl_cpp	686168993a7d4604
-1	257	1671098940106442924	CMakeFiles/_xpl_cpp.dir/cpp_primer/s12_15.cpp.o	431d7e251951b77
-257	292	1671098940142476994	_xpl_cpp	686168993a7d4604
+0	202	1671703344661161645	CMakeFiles/_xpl_cpp.dir/cpp_primer/s12_22.cpp.o	b8c5fe0ddb08ebb2
+2	137	1672888538186638758	CMakeFiles/_xpl_cpp.dir/cpp_primer/Utils.cpp.o	646e0d1049dc0d77
+0	4	0	clean	3c8e6cc385ee00ba
+207	235	1672888929518937847	_xpl_cpp	17a3e43dba5a7f5a
+0	209	1671703315801480387	CMakeFiles/_xpl_cpp.dir/main.cpp.o	352cf3af7c8b307c
+0	44	1673765992094398722	build.ninja	59bcc743700ee9c1
+0	23	1671703330776270508	CMakeFiles/_xpl_cpp.dir/music/QiFengLe.cpp.o	ad883fa41f8a63f4
+0	211	1671703330963259499	CMakeFiles/_xpl_cpp.dir/cpp_primer/s12_15.cpp.o	d78dc52481cd9fb8
+2	206	1672888929489643803	CMakeFiles/_xpl_cpp.dir/cpp_primer/s01_05.cpp.o	cfca20ae8a5e6d75
+0	405	1673765996984227116	CMakeFiles/_xpl_cpp.dir/cpp_primer/s01_15.cpp.o	92fd4d7aa3f7aeb0
+407	526	1673765997106239036	_xpl_cpp	86b07a483f771827
